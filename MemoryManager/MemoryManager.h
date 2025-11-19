@@ -1,26 +1,51 @@
 #pragma once
 #include "Slab.h"
+#include "Log.h"
+#include <vector>
+
+#ifdef _DEBUG
+#include <string>
+#include <sstream>
+#endif
+
 constexpr int BYTE_SIZES_AMOUNT = 4;
 constexpr size_t BYTE1 = 1;
 constexpr size_t BYTE4 = 4;
 constexpr size_t BYTE8 = 8;
 constexpr size_t BYTE64 = 64;
-constexpr size_t BYTE_SIZES[BYTE_SIZES_AMOUNT] = {BYTE1, BYTE4, BYTE8, BYTE64};
+
+#ifndef INIT_ALLOCATE_OVERRIDE
+#define INIT_ALLOCATE_OVERRIDE 10000
+#endif
+
+#ifndef DEFAULT_SLAB_SIZE
+#define DEFAULT_SLAB_SIZE 1000
+#endif
+
+#ifndef INIT_SLABS_RESERVED_OVERRIDE
+#define INIT_SLABS_RESERVED_OVERRIDE 10
+#endif // !INIT_SLABS_RESERVED_OVERRIDE
 
 
 class MemoryManager
 {
 private:
-	Slab* slab1;
-	Slab* slab4;
-	Slab* slab8;
-	Slab* slab64;
-	Slab* slabs[BYTE_SIZES_AMOUNT];
+	typedef char Byte;
+	std::vector<Slab*> slabs;
+	void* nextPtr = nullptr;
+	Slab* CreateNewSlab(size_t size, int amount);
+	int numberOfSlabs;
+	MemoryManager(size_t initalSize = INIT_ALLOCATE_OVERRIDE);
+	static MemoryManager* s_instance;
+	
 
 public:
-	MemoryManager();
 	template <typename T, typename... Args>
-	T* CreateAndAllocate(Args&&... args);
+	T* AllocateAndCreate(Args&&... args);
+	static MemoryManager* Get();
+	void* AllocateRaw(size_t size);
+	void DeallocateRaw(void* chunk, size_t size);
+
 
 	template <typename T>
 	void DestroyAndDeallocate(T* obj);
@@ -32,26 +57,15 @@ public:
 // Args... allows for any number of types
 // Args&& allows for r-values or l-values
 // int x = 5;
-// Foo<(x);    l-value
-// Foo(42);    r-value
+// Foo(x);    l-value
+// Foo(42);   r-value
 template<typename T, typename... Args>
-inline T* MemoryManager::CreateAndAllocate(Args&&... args)
+inline T* MemoryManager::AllocateAndCreate(Args&&... args)
 {
 	size_t size = sizeof(T);
-	Slab* slab = nullptr;
-	for (int i = 0; i < BYTE_SIZES_AMOUNT; ++i)
-	{
-		size_t thisSize = BYTE_SIZES[i];
-		if (size <= thisSize)
-		{
-			slab = slabs[i];
-			break;
-		}
-	}
 
-	if (slab == nullptr) return nullptr;
+	void* chunk = AllocateRaw(size);
 
-	void* chunk = slab->Allocate();
 	// std::forward preserved "r/l-value"-ness
 	return new(chunk) T(std::forward<Args>(args)...);
 }
@@ -59,11 +73,12 @@ inline T* MemoryManager::CreateAndAllocate(Args&&... args)
 template<typename T>
 inline void MemoryManager::DestroyAndDeallocate(T* obj)
 {
-	size_t size = sizeof(T);
+	const size_t size = sizeof(T);
 	Slab* slab = nullptr;
-	for (int i = 0; i < BYTE_SIZES_AMOUNT; ++i)
+	// gets the right slab for this object size
+	for (int i = 0; i < slabs.size(); ++i)
 	{
-		size_t thisSize = BYTE_SIZES[i];
+		size_t thisSize = slabs[i]->ChunkSize;
 		if (size <= thisSize)
 		{
 			slab = slabs[i];

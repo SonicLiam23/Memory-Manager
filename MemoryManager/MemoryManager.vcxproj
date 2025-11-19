@@ -129,11 +129,13 @@
   <ItemGroup>
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ManagedMemory.cpp" />
     <ClCompile Include="MemoryManager.cpp" />
     <ClCompile Include="Slab.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log.h" />
+    <ClInclude Include="ManagedMemory.h" />
     <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="Slab.h" />
   </ItemGroup>
