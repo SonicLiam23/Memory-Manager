@@ -33,9 +33,11 @@ private:
 	typedef char Byte;
 	std::vector<Slab*> slabs;
 	void* nextPtr = nullptr;
+	uintptr_t endOfMemory;
+	MemoryManager();
+	void CreateNewBlock();
 	Slab* CreateNewSlab(size_t size, int amount);
-	int numberOfSlabs;
-	MemoryManager(size_t initalSize = INIT_ALLOCATE_OVERRIDE);
+	
 	static MemoryManager* s_instance;
 	
 

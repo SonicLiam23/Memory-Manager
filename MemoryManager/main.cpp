@@ -5,7 +5,7 @@
 
 #include "MemoryManager.h"
 #include "Log.h"
-
+#include "windows.h"
 #include <chrono>
 using namespace std::chrono;
 
@@ -15,13 +15,14 @@ using namespace std::chrono;
 
 struct myInt : public ManagedMemory
 {
-	myInt(int val) : i(val) {}
+	
 	myInt() = default;
-	int i;
+	char i[56];
 };
+
 int main()
 {
-	myInt* a = new myInt(67);
+	myInt* a = new myInt();
 
 	myInt* int1 = new myInt();
 	myInt* int2 = new myInt();
@@ -62,7 +63,7 @@ int main()
 	LOGTEXTM((void*)char6);
 	LOGTEXTM("========");
 
-	while (true) {};
+	Log::EndLog();
 
 	return 0;
 }

@@ -6,6 +6,13 @@ MemoryManager* MemoryManager::s_instance = nullptr;
 
 Slab* MemoryManager::CreateNewSlab(size_t size, int amount)
 {
+	uintptr_t endOfThisSlab = reinterpret_cast<uintptr_t>((Byte*)nextPtr);
+	if (endOfThisSlab > endOfMemory)
+	{
+		CreateNewBlock();
+	}
+
+
 	for (int i = 0; i < slabs.size(); ++i)
 	{
 		if (size <= slabs[i]->ChunkSize)
@@ -15,11 +22,15 @@ Slab* MemoryManager::CreateNewSlab(size_t size, int amount)
 			return slabs[i];
 		}
 	}
+	slabs.push_back(new(nextPtr) Slab(size, amount));
+	nextPtr = slabs.back()->end;
+	return slabs.back();
 }
 
-MemoryManager::MemoryManager(size_t initialSize)
+MemoryManager::MemoryManager()
 {
-	nextPtr = malloc(initialSize);
+	nextPtr = malloc(INIT_ALLOCATE_OVERRIDE);
+	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr + INIT_ALLOCATE_OVERRIDE);
 	slabs.reserve(sizeof(Slab*) * INIT_SLABS_RESERVED_OVERRIDE);
 
 	slabs.push_back(new(nextPtr) Slab(1, 64));
@@ -33,6 +44,12 @@ MemoryManager::MemoryManager(size_t initialSize)
 
 	slabs.push_back(new(nextPtr) Slab(32, 16));
 	nextPtr = slabs.back()->end;
+}
+
+void MemoryManager::CreateNewBlock()
+{
+	nextPtr = malloc(INIT_ALLOCATE_OVERRIDE);
+	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr + INIT_ALLOCATE_OVERRIDE);
 }
 
 MemoryManager* MemoryManager::Get()
