@@ -57,7 +57,7 @@ static void Log::LogTextMinimal(T text)
 	try
 	{
 		std::cout << text << std::endl;
-		logText << text << "\n";
+		//logText << text << "\n";
 	}
 	catch(...) {}
 }

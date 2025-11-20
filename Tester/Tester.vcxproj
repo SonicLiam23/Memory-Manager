@@ -19,7 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FileName.cpp" />
+    <ClInclude Include="MemoryManagerTester.h" />
+    <ClInclude Include="TestInput.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MemoryManagerTester.cpp" />
+    <ClCompile Include="TestInput.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

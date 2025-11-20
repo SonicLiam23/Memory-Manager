@@ -2,29 +2,18 @@
 #include "Slab.h"
 #include "Log.h"
 #include <vector>
+#include "ManagerSettings.h"
 
 #ifdef _DEBUG
 #include <string>
 #include <sstream>
 #endif
 
-constexpr int BYTE_SIZES_AMOUNT = 4;
-constexpr size_t BYTE1 = 1;
-constexpr size_t BYTE4 = 4;
-constexpr size_t BYTE8 = 8;
-constexpr size_t BYTE64 = 64;
+// chunks will either be these sizes, or round up to the nearest 32
+constexpr size_t FixedChunkSizes[8] = { 1, 2, 4, 8, 16, 32, 64 };
 
-#ifndef INIT_ALLOCATE_OVERRIDE
-#define INIT_ALLOCATE_OVERRIDE 10000
-#endif
 
-#ifndef DEFAULT_SLAB_SIZE
-#define DEFAULT_SLAB_SIZE 1000
-#endif
 
-#ifndef INIT_SLABS_RESERVED_OVERRIDE
-#define INIT_SLABS_RESERVED_OVERRIDE 10
-#endif // !INIT_SLABS_RESERVED_OVERRIDE
 
 
 class MemoryManager
@@ -36,7 +25,7 @@ private:
 	uintptr_t endOfMemory;
 	MemoryManager();
 	void CreateNewBlock();
-	Slab* CreateNewSlab(size_t size, int amount);
+	Slab* CreateNewSlab(size_t size, int amount = DEFAULT_SLAB_SIZE_BYTES);
 	
 	static MemoryManager* s_instance;
 	

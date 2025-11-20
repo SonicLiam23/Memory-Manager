@@ -27,10 +27,12 @@ void* Slab::Allocate()
 		if (pEnd <= pChunk)
 		{
 			isFull = true;
-			return nullptr;
 		}
-
-		freeChunks.push(nextChunk);
+		else
+		{
+			freeChunks.push(nextChunk);
+		}
+		
 	}
 
 	return chunk;

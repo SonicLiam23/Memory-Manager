@@ -140,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="Log.h" />
     <ClInclude Include="ManagedMemory.h" />
+    <ClInclude Include="ManagerSettings.h" />
     <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="Slab.h" />
   </ItemGroup>

@@ -1,23 +1,18 @@
-#include <memory>
-#include "ManagedMemory.h"
-
-#define INIT_ALLOCATE_OVERRIDE 10000
-
+#define INIT_SLABS_RESERVED_OVERRIDE 20000
 #include "MemoryManager.h"
+
+#include "ManagedMemory.h"
 #include "Log.h"
 #include "windows.h"
 #include <chrono>
+#include <memory>
 using namespace std::chrono;
-
-// TODO: handle when the manager runs out of memory... 
-// i could resort to using regular new and throw a warning, but that sounds boring
-// override new, which may be impossible because im currently using templates :/
 
 struct myInt : public ManagedMemory
 {
 	
 	myInt() = default;
-	char i[56];
+	char i[512];
 };
 
 int main()
@@ -62,6 +57,13 @@ int main()
 	LOGTEXTM((void*)char5);
 	LOGTEXTM((void*)char6);
 	LOGTEXTM("========");
+
+	while (true)
+	{
+		//MemoryManager::Get()->AllocateAndCreate<int>();
+		new myInt();
+		LOGTEXTM("Data placed");
+	}
 
 	Log::EndLog();
 

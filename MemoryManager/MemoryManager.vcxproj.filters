@@ -44,5 +44,8 @@
     <ClInclude Include="ManagedMemory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ManagerSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
