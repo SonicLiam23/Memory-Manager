@@ -12,10 +12,6 @@
 // chunks will either be these sizes, or round up to the nearest 32
 constexpr size_t FixedChunkSizes[8] = { 1, 2, 4, 8, 16, 32, 64 };
 
-
-
-
-
 class MemoryManager
 {
 private:

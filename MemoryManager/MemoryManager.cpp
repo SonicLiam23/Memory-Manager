@@ -124,7 +124,7 @@ void* MemoryManager::AllocateRaw(size_t sizeofData)
 	if (slabs.size() > INIT_SLABS_RESERVED_OVERRIDE)
 	{
 		std::stringstream logtext;
-		logtext << "Slab space has exceeded the set value of " << INIT_SLABS_RESERVED_OVERRIDE << ". Define INIT_SLABS_RESERVED_OVERRIDE to increase this. Current amount: " << slabs.size();
+		logtext << "Slab space has exceeded the set value of " << INIT_SLABS_RESERVED_OVERRIDE << ". Edit INIT_SLABS_RESERVED_OVERRIDE to increase this. Current amount: " << slabs.size();
 		LOGTEXTM(logtext.str());
 	}
 #endif

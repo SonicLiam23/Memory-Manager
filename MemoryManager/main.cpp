@@ -1,4 +1,3 @@
-#define INIT_SLABS_RESERVED_OVERRIDE 20000
 #include "MemoryManager.h"
 
 #include "ManagedMemory.h"
@@ -12,7 +11,7 @@ struct myInt : public ManagedMemory
 {
 	
 	myInt() = default;
-	char i[512];
+	char i[2048];
 };
 
 int main()
