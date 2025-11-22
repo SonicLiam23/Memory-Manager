@@ -11,7 +11,7 @@ struct myInt : public ManagedMemory
 {
 	
 	myInt() = default;
-	char i[1000000];
+	char i[1];
 };
 
 int main()
@@ -47,7 +47,7 @@ int main()
 	while (true)
 	{
 		//MemoryManager::Get()->AllocateAndCreate<int>();
-		new myInt();
+		MemoryManager::Get()->AllocateRaw(432);
 		LOGTEXTM("Data placed");
 		
 	}

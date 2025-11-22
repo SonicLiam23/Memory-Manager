@@ -120,7 +120,7 @@ void* MemoryManager::AllocateRaw(size_t sizeofData)
 	{
 		slab = CreateNewSlabSafe(sizeofData);
 
-#ifdef _DEBUG
+#ifdef LOG_ALL
 		std::stringstream logtext;
 		logtext << "Could not fit data of size " << sizeofData << " creating a new slab to fit this size.";
 		LOGTEXTM(logtext.str());
@@ -134,7 +134,7 @@ void* MemoryManager::AllocateRaw(size_t sizeofData)
 		slab = CreateNewSlabSafe(sizeofData);
 
 		chunk = slab->Allocate();
-#ifdef _DEBUG
+#ifdef LOG_ALL
 		std::stringstream logtext;
 		logtext << "Could not fit data in slab of size " << thisSize << " due to no space left, creating a new one.";
 		LOGTEXTM(logtext.str());
@@ -142,7 +142,7 @@ void* MemoryManager::AllocateRaw(size_t sizeofData)
 	}
 
 
-#ifdef _DEBUG
+#ifdef LOG_ALL
 	if (slabs.size() > INIT_SLABS_RESERVED_OVERRIDE)
 	{
 		std::stringstream logtext;
