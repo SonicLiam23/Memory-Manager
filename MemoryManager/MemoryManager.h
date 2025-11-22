@@ -22,7 +22,7 @@ private:
 	void* nextPtr = nullptr;
 	uintptr_t endOfMemory;
 	MemoryManager();
-	void CreateNewBlock();
+	void CreateNewBlock(size_t minSizeBytes);
 	// "safe" as you give it the size of the data, it spits out a slab, simple :D
 	Slab* CreateNewSlabSafe(size_t sizeofData);
 	// not "safe" because you need to get the size correct for your data, use 

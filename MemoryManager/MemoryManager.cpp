@@ -32,7 +32,7 @@ Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes)
 	uintptr_t endOfThisSlab = CalcEndOfSlab(nextPtr);
 	if (endOfThisSlab > endOfMemory)
 	{
-		CreateNewBlock();
+		CreateNewBlock(slabSizeBytes);
 		// nextptr is changed in CreateNewBlock()
 		endOfThisSlab = CalcEndOfSlab(nextPtr);
 	}
@@ -69,12 +69,16 @@ MemoryManager::MemoryManager()
 	CreateNewSlab(64);
 }
 
-void MemoryManager::CreateNewBlock()
+void MemoryManager::CreateNewBlock(size_t minSizeBytes)
 {
 	LOGTEXTM("Block ran out of memory, creating a new one.");
 
-	nextPtr = malloc(BLOCK_SIZE_BYTES);
-	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr ) + BLOCK_SIZE_BYTES;
+	size_t allocSize = (minSizeBytes > BLOCK_SIZE_BYTES ? minSizeBytes : BLOCK_SIZE_BYTES);
+
+	// Allocate the new block.
+	nextPtr = malloc(allocSize);
+	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr + allocSize);
+
 	blocks.push_back(nextPtr);
 }
 

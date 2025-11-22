@@ -11,38 +11,38 @@ struct myInt : public ManagedMemory
 {
 	
 	myInt() = default;
-	char i[16];
+	char i[1000000];
 };
 
 int main()
 {
-	int* num1 = MemoryManager::Get()->AllocateAndCreate<int>();
-	int* num2 = MemoryManager::Get()->AllocateAndCreate<int>();
-	int* num3 = MemoryManager::Get()->AllocateAndCreate<int>();
-	LOGTEXTM((void*)num1);
-	LOGTEXTM((void*)num2);
-	LOGTEXTM((void*)num3);
-	LOGTEXTM("========");
-	MemoryManager::Get()->DestroyAndDeallocate<int>(num2);
-	int* num4 = MemoryManager::Get()->AllocateAndCreate<int>();
-	LOGTEXTM((void*)num4);
-	LOGTEXTM("========");
-	char* char1 = MemoryManager::Get()->AllocateAndCreate<char>();
-	char* char2 = MemoryManager::Get()->AllocateAndCreate<char>();
-	char* char3 = MemoryManager::Get()->AllocateAndCreate<char>();
-	char* char4 = MemoryManager::Get()->AllocateAndCreate<char>();
-	LOGTEXTM((void*)char1);
-	LOGTEXTM((void*)char2);
-	LOGTEXTM((void*)char3);
-	LOGTEXTM((void*)char4);
-	LOGTEXTM("========");
-	MemoryManager::Get()->DestroyAndDeallocate<char>(char1);
-	MemoryManager::Get()->DestroyAndDeallocate<char>(char2);
-	char* char5 = MemoryManager::Get()->AllocateAndCreate<char>();
-	char* char6 = MemoryManager::Get()->AllocateAndCreate<char>();
-	LOGTEXTM((void*)char5);
-	LOGTEXTM((void*)char6);
-	LOGTEXTM("========");
+	//int* num1 = MemoryManager::Get()->AllocateAndCreate<int>();
+	//int* num2 = MemoryManager::Get()->AllocateAndCreate<int>();
+	//int* num3 = MemoryManager::Get()->AllocateAndCreate<int>();
+	//LOGTEXTM((void*)num1);
+	//LOGTEXTM((void*)num2);
+	//LOGTEXTM((void*)num3);
+	//LOGTEXTM("========");
+	//MemoryManager::Get()->DestroyAndDeallocate<int>(num2);
+	//int* num4 = MemoryManager::Get()->AllocateAndCreate<int>();
+	//LOGTEXTM((void*)num4);
+	//LOGTEXTM("========");
+	//char* char1 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//char* char2 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//char* char3 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//char* char4 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//LOGTEXTM((void*)char1);
+	//LOGTEXTM((void*)char2);
+	//LOGTEXTM((void*)char3);
+	//LOGTEXTM((void*)char4);
+	//LOGTEXTM("========");
+	//MemoryManager::Get()->DestroyAndDeallocate<char>(char1);
+	//MemoryManager::Get()->DestroyAndDeallocate<char>(char2);
+	//char* char5 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//char* char6 = MemoryManager::Get()->AllocateAndCreate<char>();
+	//LOGTEXTM((void*)char5);
+	//LOGTEXTM((void*)char6);
+	//LOGTEXTM("========");
 
 	while (true)
 	{
