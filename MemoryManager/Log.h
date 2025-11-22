@@ -1,8 +1,9 @@
 #pragma once
-#if defined _DEBUG
 #include <string>
 #include <sstream>
 #include <fstream>
+#if defined _DEBUG
+
 
 #define LOGTEXT(x) Log::LogText(__FILE__, __LINE__, x)
 #define LOGTEXTM(x) Log::LogTextMinimal(x)
@@ -57,7 +58,7 @@ static void Log::LogTextMinimal(T text)
 	try
 	{
 		std::cout << text << std::endl;
-		//logText << text << "\n";
+		// logText << text << "\n";
 	}
 	catch(...) {}
 }

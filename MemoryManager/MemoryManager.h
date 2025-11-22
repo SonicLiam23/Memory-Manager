@@ -17,11 +17,16 @@ class MemoryManager
 private:
 	typedef char Byte;
 	std::vector<Slab*> slabs;
+	std::vector<void*> blocks;
+
 	void* nextPtr = nullptr;
 	uintptr_t endOfMemory;
 	MemoryManager();
 	void CreateNewBlock();
-	Slab* CreateNewSlab(size_t size, int amount = DEFAULT_SLAB_SIZE_BYTES);
+	// "safe" as you give it the size of the data, it spits out a slab, simple :D
+	Slab* CreateNewSlabSafe(size_t sizeofData);
+	// not "safe" because you need to get the size correct for your data, use 
+	Slab* CreateNewSlab(size_t sizeofData, size_t slabSizeBytes = DEFAULT_SLAB_SIZE_BYTES);
 	
 	static MemoryManager* s_instance;
 	
@@ -36,6 +41,8 @@ public:
 
 	template <typename T>
 	void DestroyAndDeallocate(T* obj);
+
+	~MemoryManager();
 };
 
 

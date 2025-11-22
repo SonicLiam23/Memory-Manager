@@ -11,24 +11,11 @@ struct myInt : public ManagedMemory
 {
 	
 	myInt() = default;
-	char i[2048];
+	char i[16];
 };
 
 int main()
 {
-	myInt* a = new myInt();
-
-	myInt* int1 = new myInt();
-	myInt* int2 = new myInt();
-	LOGTEXTM((void*)int1); LOGTEXTM((void*)int2);
-	LOGTEXTM("========");
-	delete int1;
-	myInt* int3 = new myInt();
-	LOGTEXTM((void*)int3); 
-	LOGTEXTM("========");
-	LOGTEXTM("========");
-	LOGTEXTM("========");
-
 	int* num1 = MemoryManager::Get()->AllocateAndCreate<int>();
 	int* num2 = MemoryManager::Get()->AllocateAndCreate<int>();
 	int* num3 = MemoryManager::Get()->AllocateAndCreate<int>();
@@ -62,13 +49,16 @@ int main()
 		//MemoryManager::Get()->AllocateAndCreate<int>();
 		new myInt();
 		LOGTEXTM("Data placed");
+		
 	}
 
+	delete MemoryManager::Get();
 	Log::EndLog();
 
 	return 0;
 }
 
+/*
 void m(){
 
 
@@ -131,4 +121,4 @@ void m(){
 
 	system("pause");
 }
-
+*/
