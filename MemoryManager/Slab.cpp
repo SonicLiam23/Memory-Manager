@@ -44,6 +44,6 @@ void Slab::DeallocateRaw(void* chunk)
 	uintptr_t pStart = reinterpret_cast<uintptr_t>(start);
 	uintptr_t pEnd = reinterpret_cast<uintptr_t>(end);
 	uintptr_t pChunk = reinterpret_cast<uintptr_t>(chunk);
-	if (pChunk < pStart || pChunk > pEnd) return;
+	if (pChunk < pStart || pChunk >= pEnd) return;
 	freeChunks.push(chunk);
 }

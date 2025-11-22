@@ -24,10 +24,17 @@ Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes)
 	size_t chunkAmt = slabSizeBytes / chunkSize;
 	slabSizeBytes += sizeof(Slab); // slab is stored in block too, account for this
 
-	uintptr_t endOfThisSlab = reinterpret_cast<uintptr_t>((Byte*)nextPtr) + (slabSizeBytes);
+	auto CalcEndOfSlab = [&](void* startPtr) -> uintptr_t
+		{
+			return reinterpret_cast<uintptr_t>((Byte*)startPtr) + slabSizeBytes;
+		};
+
+	uintptr_t endOfThisSlab = CalcEndOfSlab(nextPtr);
 	if (endOfThisSlab > endOfMemory)
 	{
 		CreateNewBlock();
+		// nextptr is changed in CreateNewBlock()
+		endOfThisSlab = CalcEndOfSlab(nextPtr);
 	}
 
 	for (int i = 0; i < slabs.size(); ++i)
