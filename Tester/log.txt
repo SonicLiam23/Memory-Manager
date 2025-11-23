@@ -1,0 +1,19 @@
+Starting raw bulk allocate test...
+Starting My Memory manager test...
+Time taken: 124 milliseconds.
+Average time for 1 allocation: 0.00124 milliseconds.
+Starting C++ operator new test...
+Time taken: 24 milliseconds.
+Average time for 1 allocation: 0.00024 milliseconds.
+My memory manager had a time difference of -100 milliseconds.
+===================
+Starting typed bulk allocate test...
+Starting My Memory manager test...
+Time taken: 172 milliseconds.
+Average time for 1 allocation: 0.00172 milliseconds.
+Starting C++ operator new test...
+Time taken: 13 milliseconds.
+Average time for 1 allocation: 0.00013 milliseconds.
+My memory manager had a time difference of -159 milliseconds.
+===================
+

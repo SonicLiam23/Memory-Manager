@@ -2,6 +2,7 @@
 #include "Slab.h"
 #include "Log.h"
 #include <vector>
+#include <unordered_map>
 #include "ManagerSettings.h"
 
 #ifdef _DEBUG
@@ -16,7 +17,7 @@ class MemoryManager
 {
 private:
 	typedef char Byte;
-	std::vector<Slab*> slabs;
+	std::unordered_map<size_t, std::vector<Slab*>> slabsBySize;
 	std::vector<void*> blocks;
 
 	void* nextPtr = nullptr;
@@ -43,6 +44,7 @@ public:
 	void DestroyAndDeallocate(T* obj);
 
 	~MemoryManager();
+	void Reset();
 };
 
 
@@ -68,18 +70,50 @@ template<typename T>
 inline void MemoryManager::DestroyAndDeallocate(T* obj)
 {
 	const size_t size = sizeof(T);
-	Slab* slab = nullptr;
-	// gets the right slab for this object size
-	for (int i = 0; i < slabs.size(); ++i)
+	size_t chunkSize = RoundUpToChunkSize(size);
+
+	auto it = slabsBySize.find(chunkSize);
+	if (it == slabsBySize.end()) return;
+
+	uintptr_t c = reinterpret_cast<uintptr_t>(obj);
+	for (Slab* slab : it->second)
 	{
-		size_t thisSize = slabs[i]->ChunkSize;
-		if (size <= thisSize)
+		uintptr_t sStart = reinterpret_cast<uintptr_t>(slab->start);
+		uintptr_t sEnd = reinterpret_cast<uintptr_t>(slab->end);
+		if (c >= sStart && c < sEnd)
 		{
-			slab = slabs[i];
-			break;
+			// call destructor then free
+			obj->~T();
+			slab->DeallocateRaw(obj);
+			return;
 		}
 	}
 
-	if (slab == nullptr) return;
-	slab->Deallocate<T>((void*)obj);
+#ifdef LOG_ALL
+	LOGTEXTM("DestroyAndDeallocate: object not found in any slab for that size.");
+#endif
+}
+
+// Round up to size class
+static inline size_t RoundUpToChunkSize(size_t size)
+{
+	if (size == 0) return 1;
+
+	if (size <= 64) {
+		// next power of two
+		size_t v = size - 1;
+		v |= v >> 1;
+		v |= v >> 2;
+		v |= v >> 4;
+		v |= v >> 8;
+		v |= v >> 16;
+#if INTPTR_MAX > INT32_MAX
+		v |= v >> 32;
+#endif
+		return v + 1;
+	}
+	else {
+		// round up to nearest multiple of 32
+		return ((size + 31) / 32) * 32;
+	}
 }

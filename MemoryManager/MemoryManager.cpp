@@ -7,22 +7,22 @@
 
 MemoryManager* MemoryManager::s_instance = nullptr;
 
-Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes)
+Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes /*= DEFAULT_SLAB_SIZE_BYTES*/)
 {
-	size_t chunkSize;
-	// round slab up to the nearest power of 2, up to 64
-	if (sizeofData <= 64) 
-	{
-		chunkSize = pow(2, ceil(log2(sizeofData)));;
+	size_t chunkSize = std::max(RoundUpToChunkSize(sizeofData), sizeof(Slab::ChunkNode));
+
+	// usable bytes being the amount of "usable" data by the slab
+	size_t usableBytes = (slabSizeBytes > sizeof(Slab)) ? (slabSizeBytes - sizeof(Slab)) : 0;
+	size_t chunkAmt = (usableBytes / chunkSize);
+	if (chunkAmt == 0) {
+		// ensure at least one chunk if data is larger than DEFAULT_SLAB_SIZE_BYTES
+		chunkAmt = 1;
+		usableBytes = chunkAmt * chunkSize;
+		slabSizeBytes = sizeof(Slab) + usableBytes;
 	}
-	// round slab up to the nearest 32
-	else 
-	{
-		chunkSize = ((sizeofData + 31) / 32) * 32;
+	else {
+		slabSizeBytes = sizeof(Slab) + chunkAmt * chunkSize;
 	}
-	
-	size_t chunkAmt = slabSizeBytes / chunkSize;
-	slabSizeBytes += sizeof(Slab); // slab is stored in block too, account for this
 
 	auto CalcEndOfSlab = [&](void* startPtr) -> uintptr_t
 		{
@@ -33,24 +33,16 @@ Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes)
 	if (endOfThisSlab > endOfMemory)
 	{
 		CreateNewBlock(slabSizeBytes);
-		// nextptr is changed in CreateNewBlock()
 		endOfThisSlab = CalcEndOfSlab(nextPtr);
 	}
 
-	for (int i = 0; i < slabs.size(); ++i)
-	{
-		if (chunkSize <= slabs[i]->ChunkSize)
-		{
-			slabs.insert(slabs.begin() + i, new(nextPtr) Slab(chunkSize, chunkAmt));
-			assert(reinterpret_cast<uintptr_t>(nextPtr) <= endOfMemory);
-			nextPtr = reinterpret_cast<void*>(endOfThisSlab);
-			return slabs[i];
-		}
-	}
-	slabs.push_back(new(nextPtr) Slab(chunkSize, chunkAmt));
-	assert(reinterpret_cast<uintptr_t>(nextPtr) <= endOfMemory);
+	// placement new of Slab header at nextPtr
+	Slab* newSlab = new(nextPtr) Slab(chunkSize, static_cast<unsigned int>(chunkAmt));
+	slabsBySize[chunkSize].push_back(newSlab);
+
 	nextPtr = reinterpret_cast<void*>(endOfThisSlab);
-	return slabs.back();
+
+	return newSlab;
 }
 
 MemoryManager::MemoryManager()
@@ -58,7 +50,6 @@ MemoryManager::MemoryManager()
 
 	nextPtr = malloc(BLOCK_SIZE_BYTES);
 	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr + BLOCK_SIZE_BYTES);
-	slabs.reserve(INIT_SLABS_RESERVED_OVERRIDE);
 	blocks.reserve(INIT_BLOCKS_RESERVED_OVERRIDE);
 	blocks.push_back(nextPtr);
 
@@ -71,15 +62,29 @@ MemoryManager::MemoryManager()
 
 void MemoryManager::CreateNewBlock(size_t minSizeBytes)
 {
+#ifdef LOG_ALL
 	LOGTEXTM("Block ran out of memory, creating a new one.");
+#endif
 
 	size_t allocSize = (minSizeBytes > BLOCK_SIZE_BYTES ? minSizeBytes : BLOCK_SIZE_BYTES);
 
-	// Allocate the new block.
-	nextPtr = malloc(allocSize);
-	endOfMemory = reinterpret_cast<uintptr_t>((Byte*)nextPtr + allocSize);
+	// Allocate the new block
+	void* raw = malloc(allocSize);
+	assert(raw != nullptr);
 
-	blocks.push_back(nextPtr);
+	// Align block to 16 bytes for slab safety
+	uintptr_t p = reinterpret_cast<uintptr_t>(raw);
+	// Align p up to the next 16-byte boundary:
+	uintptr_t aligned =
+		(p + 16 - 1)        // add 15 so we round *up* to the next boundary
+		& ~(uintptr_t)(16 - 1); // clear the lower 4 bits (mask = ~0xF), forcing 16-byte alignment
+
+	nextPtr = reinterpret_cast<void*>(aligned);
+
+	// endOfMemory must be (raw + allocSize) — not (nextPtr + allocSize)!
+	endOfMemory = reinterpret_cast<uintptr_t>(raw) + allocSize;
+
+	blocks.push_back(raw);
 }
 
 Slab* MemoryManager::CreateNewSlabSafe(size_t sizeofData)
@@ -88,7 +93,9 @@ Slab* MemoryManager::CreateNewSlabSafe(size_t sizeofData)
 	{
 		size_t newSize = ((sizeofData + 127) / 128) * 128 * LARGE_DATA_CHUNK_AMT;
 		return CreateNewSlab(sizeofData, newSize);
+#ifdef LOG_ALL
 		LOGTEXTM("DEFAULT_SLAB_SIZE_BYTES was too small for data. increase it to reduce overhead when assigning large data types.");
+#endif
 	}
 	else
 		return CreateNewSlab(sizeofData, DEFAULT_SLAB_SIZE_BYTES);
@@ -101,86 +108,89 @@ MemoryManager* MemoryManager::Get()
 
 void* MemoryManager::AllocateRaw(size_t sizeofData)
 {
-	Slab* slab = nullptr;
-	size_t thisSize = 0;
-	// gets the right slab for this object size
+	// get size
+	size_t chunkSize = RoundUpToChunkSize(sizeofData);
 
-	for (int i = 0; i < slabs.size(); ++i)
+	// try to find exact size class quickly
+	auto it = slabsBySize.find(chunkSize);
+	if (it != slabsBySize.end())
 	{
-		thisSize = slabs[i]->ChunkSize;
-		if (sizeofData <= thisSize)
+		auto& slabList = it->second;
+		// Find the first slab with free space, skip isFull ones
+		for (Slab* s : slabList)
 		{
-			slab = slabs[i];
-			break;
+			if (s->isFull) continue;
+			void* chunk = s->Allocate();
+			if (chunk)
+				return chunk;
 		}
 	}
 
-	// create a new slab that fits (bigger than the biggest)
-	if (slab == nullptr)
-	{
-		slab = CreateNewSlabSafe(sizeofData);
-
 #ifdef LOG_ALL
-		std::stringstream logtext;
-		logtext << "Could not fit data of size " << sizeofData << " creating a new slab to fit this size.";
-		LOGTEXTM(logtext.str());
+	std::stringstream logtext;
+	logtext << "Could not fit data of size " << sizeofData << " creating a new slab to fit this size.";
+	LOGTEXTM(logtext.str());
 #endif
-	}
 
+	// No slab had space, create a new one
+	Slab* slab = CreateNewSlabSafe(sizeofData);
 	void* chunk = slab->Allocate();
-	// cretae new slab of size thisSize
-	if (chunk == nullptr)
-	{
-		slab = CreateNewSlabSafe(sizeofData);
-
-		chunk = slab->Allocate();
-#ifdef LOG_ALL
-		std::stringstream logtext;
-		logtext << "Could not fit data in slab of size " << thisSize << " due to no space left, creating a new one.";
-		LOGTEXTM(logtext.str());
-#endif
-	}
-
-
-#ifdef LOG_ALL
-	if (slabs.size() > INIT_SLABS_RESERVED_OVERRIDE)
-	{
-		std::stringstream logtext;
-		logtext << "Slab space has exceeded the set value of " << INIT_SLABS_RESERVED_OVERRIDE << ". Edit INIT_SLABS_RESERVED_OVERRIDE to increase this. Current amount: " << slabs.size();
-		LOGTEXTM(logtext.str());
-	}
-#endif
-	
-	assert(reinterpret_cast<uintptr_t>(nextPtr) <= endOfMemory);
 	return chunk;
 }
 
 void MemoryManager::DeallocateRaw(void* chunk, size_t size)
 {
-	Slab* slab = nullptr;
-	// gets the right slab for this object size
-	for (int i = 0; i < slabs.size(); ++i)
+	// Determine the size-class we should search for:
+	size_t chunkSize = RoundUpToChunkSize(size);
+
+	auto it = slabsBySize.find(chunkSize); // exact match is faster & clearer
+	if (it == slabsBySize.end()) return;
+
+	for (Slab* slab : it->second)
 	{
-		size_t thisSize = slabs[i]->ChunkSize;
-		if (size <= thisSize)
+		// check chunk ownership
+		uintptr_t c = reinterpret_cast<uintptr_t>(chunk);
+		uintptr_t sStart = reinterpret_cast<uintptr_t>(slab->start);
+		uintptr_t sEnd = reinterpret_cast<uintptr_t>(slab->end);
+		if (c >= sStart && c < sEnd)
 		{
-			slab = slabs[i];
-			break;
+			slab->DeallocateRaw(chunk);
+			return;
 		}
 	}
-	if (slab == nullptr) return;
-	slab->DeallocateRaw(chunk);
+
+	// Not found: possible error (invalid pointer or wrong size provided)
+#ifdef LOG_ALL
+	LOGTEXTM("DeallocateRaw: chunk not found in any slab of that size class.");
+#endif
 }
 
 MemoryManager::~MemoryManager()
 {
+	// Iterate over all size classes in the map
+	for (auto& pair : slabsBySize)
+	{
+		auto& slabList = pair.second;
+		for (Slab* slab : slabList)
+		{
+			// Call the destructor explicitly
+			slab->~Slab();
+		}
+	}
 	for (void* ptr : blocks)
 	{
 		free(ptr);
 	}
+}
 
-	for (Slab* slab : slabs)
-	{
-		delete slab;
-	}
+void MemoryManager::Reset()
+{
+	if (!s_instance) return;
+
+	// Explicitly call destructor
+	s_instance->~MemoryManager();
+	std::free(s_instance);
+
+	// Clear the singleton pointer
+	s_instance = nullptr;
 }

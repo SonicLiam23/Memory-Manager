@@ -18,15 +18,12 @@
     <ClInclude Include="MemoryManagerTester.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestInput.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemoryManagerTester.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestInput.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

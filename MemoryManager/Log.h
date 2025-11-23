@@ -29,14 +29,13 @@ struct Log
 	
 
 	static void EndLog()
-	{
-		std::ofstream file("log.txt");
-		file << logText.str();
+	{	
 		file.close();
 	}
 
 private:
 	static std::stringstream logText;
+	static std::ofstream file;
 };
 
 template<typename T>
@@ -57,8 +56,12 @@ static void Log::LogTextMinimal(T text)
 {
 	try
 	{
+		if (!file.is_open())
+		{
+			file.open("log.txt");
+		}
 		std::cout << text << std::endl;
-		// logText << text << "\n";
+		file << text << "\n";
 	}
 	catch(...) {}
 }

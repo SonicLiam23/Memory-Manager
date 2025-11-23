@@ -1,49 +1,46 @@
 #include "Slab.h"
+#include <assert.h>
 
-Slab::Slab(size_t chunkSize, unsigned int chunkAmount) : ChunkSize(chunkSize), isFull(false)
+Slab::Slab(size_t chunkSize, unsigned int chunkAmount) : ChunkSize(chunkSize), isFull(false), freeListHead(nullptr)
 {
-	
-	start = (void*)((Byte*)this + sizeof(Slab));
-	freeChunks.push(start);
-	end = (void*)((Byte*)start + ( chunkSize * chunkAmount));
+    // Calculate start of slab memory (after Slab header)
+    start = (void*)((Byte*)this + sizeof(Slab));
+    end = (void*)((Byte*)start + chunkSize * chunkAmount);
+
+    // Initialize free list: each chunk points to the next
+    Byte* ptr = (Byte*)start;
+    for (unsigned int i = 0; i < chunkAmount; ++i)
+    {
+        ChunkNode* node = reinterpret_cast<ChunkNode*>(ptr);
+        node->next = freeListHead;
+        freeListHead = node;
+        ptr += chunkSize;
+    }
 }
 
 void* Slab::Allocate()
 {
-	if (isFull) return nullptr;
+    if (!freeListHead)
+    {
+        isFull = true;
+        return nullptr;
+    }
 
-	void* chunk = freeChunks.top();
-	freeChunks.pop();
-	// if it is ever empty, we are at the "end" of used memory, essentially this:
-	// 1 - used; 0 - free;
-	// 1 1 1 1 0 0 0 0 0 0 0 0
-	// empty after popping means we used that first 0
-	if (freeChunks.empty())
-	{
-		void* nextChunk = (void*)((Byte*)chunk + ChunkSize);
-		// check if its past the end
-		uintptr_t pEnd = reinterpret_cast<uintptr_t>(end);
-		uintptr_t pChunk = reinterpret_cast<uintptr_t>(nextChunk);
-		if (pEnd <= pChunk)
-		{
-			isFull = true;
-		}
-		else
-		{
-			freeChunks.push(nextChunk);
-		}
-		
-	}
+    // Pop from free list
+    ChunkNode* node = freeListHead;
+    freeListHead = freeListHead->next;
 
-	return chunk;
+    if (!freeListHead)
+        isFull = true;
+
+    return node;
 }
 
 void Slab::DeallocateRaw(void* chunk)
 {
-	// convert to uintptr_t to do comparisons
-	uintptr_t pStart = reinterpret_cast<uintptr_t>(start);
-	uintptr_t pEnd = reinterpret_cast<uintptr_t>(end);
-	uintptr_t pChunk = reinterpret_cast<uintptr_t>(chunk);
-	if (pChunk < pStart || pChunk >= pEnd) return;
-	freeChunks.push(chunk);
+    // Push back into free list
+    ChunkNode* node = reinterpret_cast<ChunkNode*>(chunk);
+    node->next = freeListHead;
+    freeListHead = node;
+    isFull = false; // slab now has at least one free chunk
 }

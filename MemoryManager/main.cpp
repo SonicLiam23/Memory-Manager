@@ -7,11 +7,9 @@
 #include <memory>
 using namespace std::chrono;
 
-struct myInt : public ManagedMemory
+class test : public ManagedMemory
 {
-	
-	myInt() = default;
-	char i[1];
+	char c[1000000000];
 };
 
 int main()
@@ -44,12 +42,11 @@ int main()
 	//LOGTEXTM((void*)char6);
 	//LOGTEXTM("========");
 
-	while (true)
+	for (int i = 0; i < 100000; ++i)
 	{
-		//MemoryManager::Get()->AllocateAndCreate<int>();
-		MemoryManager::Get()->AllocateRaw(432);
-		LOGTEXTM("Data placed");
-		
+		size_t size = rand() % 1028 + 1;
+		void* ptr = MemoryManager::Get()->AllocateRaw(size);
+		if (rand() % 2 == 1) MemoryManager::Get()->DeallocateRaw(ptr, size);
 	}
 
 	delete MemoryManager::Get();
