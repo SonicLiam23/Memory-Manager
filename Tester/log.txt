@@ -1,19 +1,87 @@
 Starting raw bulk allocate test...
 Starting My Memory manager test...
-Time taken: 124 milliseconds.
-Average time for 1 allocation: 0.00124 milliseconds.
+Time taken: 130 milliseconds.
+Average time for 1 cycle(allocation + 50 % chance of dealloc): 1.30674 microseconds.
 Starting C++ operator new test...
-Time taken: 24 milliseconds.
-Average time for 1 allocation: 0.00024 milliseconds.
-My memory manager had a time difference of -100 milliseconds.
+Time taken: 25 milliseconds.
+Average time for 1 cycle (allocation + 50% chance of dealloc): 0.25023 microseconds.
+My memory manager had a time difference of -1.05651 microeconds on average per cycle.
 ===================
 Starting typed bulk allocate test...
 Starting My Memory manager test...
-Time taken: 172 milliseconds.
-Average time for 1 allocation: 0.00172 milliseconds.
+Time taken: 182 milliseconds.
+Average time for 1 cycle(allocation + 50 % chance of dealloc): 1.824 microseconds.
 Starting C++ operator new test...
-Time taken: 13 milliseconds.
-Average time for 1 allocation: 0.00013 milliseconds.
-My memory manager had a time difference of -159 milliseconds.
+Time taken: 11 milliseconds.
+Average time for 1 cycle (allocation + 50% chance of dealloc): 0.11488 microseconds.
+My memory manager had a time difference of -1.70912 microeconds on average per cycle.
+===================
+
+Starting Slab overflow test...
+Slab overflow allocation completed in: 25441 microseconds.
+Starting deallocation...
+Slab overflow deallocation completed in: 25952 microseconds.
+Slab overflow test complete.
+===================
+
+Starting Chunk overflow test...
+Chunk overflow allocation completed in: 253 milliseconds.
+Starting deallocation...
+Chunk overflow deallocation completed in: 42 microseconds.
+Chunk overflow test complete.
+===================
+
+Starting endurance test...
+Endurance test complete!
+Allocated 3000859 pieces of data
+Average of 5.18454 microseconds per allocation.
+DeAllocated 2700599 pieces of data
+Average of 4.17423 microseconds per DeAllocation.
+===================
+
+
+
+Now to test them without resetting anything, all back-to-back!
+
+
+Starting raw bulk allocate test...
+Starting My Memory manager test...
+Time taken: 2007 milliseconds.
+Average time for 1 cycle(allocation + 50 % chance of dealloc): 20.0784 microseconds.
+Starting C++ operator new test...
+Time taken: 23 milliseconds.
+Average time for 1 cycle (allocation + 50% chance of dealloc): 0.23443 microseconds.
+My memory manager had a time difference of -19.844 microeconds on average per cycle.
+===================
+Starting typed bulk allocate test...
+Starting My Memory manager test...
+Time taken: 217 milliseconds.
+Average time for 1 cycle(allocation + 50 % chance of dealloc): 2.17355 microseconds.
+Starting C++ operator new test...
+Time taken: 11 milliseconds.
+Average time for 1 cycle (allocation + 50% chance of dealloc): 0.11473 microseconds.
+My memory manager had a time difference of -2.05882 microeconds on average per cycle.
+===================
+
+Starting Slab overflow test...
+Slab overflow allocation completed in: 36393 microseconds.
+Starting deallocation...
+Slab overflow deallocation completed in: 53156 microseconds.
+Slab overflow test complete.
+===================
+
+Starting Chunk overflow test...
+Chunk overflow allocation completed in: 237 milliseconds.
+Starting deallocation...
+Chunk overflow deallocation completed in: 37 microseconds.
+Chunk overflow test complete.
+===================
+
+Starting endurance test...
+Endurance test complete!
+Allocated 859776 pieces of data
+Average of 16.3729 microseconds per allocation.
+DeAllocated 774100 pieces of data
+Average of 19.351 microseconds per DeAllocation.
 ===================
 

@@ -9,7 +9,7 @@ struct MemoryManagerTester
 	void BulkAllocateNew();
 	void OverflowSlab();
 	void OverflowChunk();
-	void MassiveDataAllocation();
+	void EnduranceTest(int secs);
 
 };
 
