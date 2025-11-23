@@ -1,5 +1,4 @@
 #include "MemoryManager.h"
-
 #include "ManagedMemory.h"
 #include "Log.h"
 #include "windows.h"
@@ -41,18 +40,41 @@ int main()
 	//LOGTEXTM((void*)char5);
 	//LOGTEXTM((void*)char6);
 	//LOGTEXTM("========");
-
-	for (int i = 0; i < 100000; ++i)
+	constexpr int loopAmount = 100000;
+	for (int i = 0; i < loopAmount; ++i)
 	{
+
 		size_t size = rand() % 1028 + 1;
+
+#ifdef TIME_FUNC
+		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+#endif
 		void* ptr = MemoryManager::Get()->AllocateRaw(size);
-		if (rand() % 2 == 1) MemoryManager::Get()->DeallocateRaw(ptr, size);
+#ifdef  TIME_FUNC
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		float diff = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+		std::stringstream ss;
+		ss << "Time: " << diff << " microseconds";
+		LOGTEXTM(ss.str());
+#endif //  TIME_FUNC
+
+
+		MemoryManager::Get()->DeallocateRaw(ptr, size);
+
+
 	}
+
+	std::cin.get();
+	return 0;
 
 	delete MemoryManager::Get();
 	Log::EndLog();
 
 	return 0;
+
+
+
+
 }
 
 /*

@@ -1,5 +1,6 @@
 #include "MemoryManagerTester.h"
 #include "MemoryManager.h"
+#include <iostream>
 
 int main()
 {
@@ -24,5 +25,7 @@ int main()
 
 	Log::EndLog();
 	delete MemoryManager::Get();
+
+	std::cin.get();
 	return 0;
 }

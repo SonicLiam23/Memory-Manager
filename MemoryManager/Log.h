@@ -2,19 +2,19 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#if defined _DEBUG
+//#if defined _DEBUG
 
 
 #define LOGTEXT(x) Log::LogText(__FILE__, __LINE__, x)
 #define LOGTEXTM(x) Log::LogTextMinimal(x)
 
 
-#else
+//#else
 
-#define LOGTEXT(x)
-#define LOGTEXTM(x)
+//#define LOGTEXT(x)
+//#define LOGTEXTM(x)
 
-#endif
+//#endif
 
 #include <iostream>
 

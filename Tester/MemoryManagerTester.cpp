@@ -1,7 +1,6 @@
 #include "MemoryManagerTester.h"
 #include <chrono>
 #include "MemoryManager.h"
-#include "Log.h"
 #include <sstream>
 #include <string>
 using namespace std::chrono;

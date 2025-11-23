@@ -5,12 +5,32 @@
 #include <cmath>
 #include <assert.h>
 
+
+
+
 MemoryManager* MemoryManager::s_instance = nullptr;
 
 Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes /*= DEFAULT_SLAB_SIZE_BYTES*/)
 {
 	size_t chunkSize = std::max(RoundUpToChunkSize(sizeofData), sizeof(Slab::ChunkNode));
 
+	auto partial = partialSlabs.find(chunkSize);
+	if (partial != partialSlabs.end())
+	{
+		// may be empty when we had some partial data, then used it
+		if (!partial->second.empty())
+		{
+			// this slab has some free data, use it instead
+			Slab* newCurrent = partial->second.back();
+			partial->second.pop_back();
+
+			currentSlabs[chunkSize] = newCurrent;
+			return currentSlabs[chunkSize];
+		}
+
+	}
+
+	// There was no partial slab to use, so we must create a new slab
 	// usable bytes being the amount of "usable" data by the slab
 	size_t usableBytes = (slabSizeBytes > sizeof(Slab)) ? (slabSizeBytes - sizeof(Slab)) : 0;
 	size_t chunkAmt = (usableBytes / chunkSize);
@@ -38,9 +58,11 @@ Slab* MemoryManager::CreateNewSlab(size_t sizeofData, size_t slabSizeBytes /*= D
 
 	// placement new of Slab header at nextPtr
 	Slab* newSlab = new(nextPtr) Slab(chunkSize, static_cast<unsigned int>(chunkAmt));
-	slabsBySize[chunkSize].push_back(newSlab);
+	currentSlabs[chunkSize] = newSlab;
 
 	nextPtr = reinterpret_cast<void*>(endOfThisSlab);
+
+
 
 	return newSlab;
 }
@@ -85,10 +107,12 @@ void MemoryManager::CreateNewBlock(size_t minSizeBytes)
 	endOfMemory = reinterpret_cast<uintptr_t>(raw) + allocSize;
 
 	blocks.push_back(raw);
+
 }
 
 Slab* MemoryManager::CreateNewSlabSafe(size_t sizeofData)
 {
+
 	if (sizeofData > DEFAULT_SLAB_SIZE_BYTES)
 	{
 		size_t newSize = ((sizeofData + 127) / 128) * 128 * LARGE_DATA_CHUNK_AMT;
@@ -99,6 +123,7 @@ Slab* MemoryManager::CreateNewSlabSafe(size_t sizeofData)
 	}
 	else
 		return CreateNewSlab(sizeofData, DEFAULT_SLAB_SIZE_BYTES);
+
 }
 
 MemoryManager* MemoryManager::Get()
@@ -108,22 +133,39 @@ MemoryManager* MemoryManager::Get()
 
 void* MemoryManager::AllocateRaw(size_t sizeofData)
 {
+
 	// get size
 	size_t chunkSize = RoundUpToChunkSize(sizeofData);
 
 	// try to find exact size class quickly
-	auto it = slabsBySize.find(chunkSize);
-	if (it != slabsBySize.end())
+	auto it = currentSlabs.find(chunkSize);
+	if (it != currentSlabs.end())
 	{
-		auto& slabList = it->second;
-		// Find the first slab with free space, skip isFull ones
-		for (Slab* s : slabList)
+		Slab* slab = it->second;
+		if (slab)
 		{
-			if (s->isFull) continue;
-			void* chunk = s->Allocate();
+			// Find the first slab with free space, skip isFull ones
+			void* chunk = slab->Allocate();
+			if (slab->isFull)
+			{
+				auto& vec = fullSlabs[chunkSize];
+
+				// Option A: insert sorted
+				auto pos = std::lower_bound(
+					vec.begin(), vec.end(),
+					slab,
+					[](Slab* a, Slab* b) { return a->start < b->start; }
+				);
+				vec.insert(pos, slab);
+
+				// mark current slab as null
+				it->second = nullptr;
+			}
+
 			if (chunk)
 				return chunk;
 		}
+
 	}
 
 #ifdef LOG_ALL
@@ -135,26 +177,82 @@ void* MemoryManager::AllocateRaw(size_t sizeofData)
 	// No slab had space, create a new one
 	Slab* slab = CreateNewSlabSafe(sizeofData);
 	void* chunk = slab->Allocate();
+
 	return chunk;
 }
 
 void MemoryManager::DeallocateRaw(void* chunk, size_t size)
 {
+
 	// Determine the size-class we should search for:
 	size_t chunkSize = RoundUpToChunkSize(size);
 
-	auto it = slabsBySize.find(chunkSize); // exact match is faster & clearer
-	if (it == slabsBySize.end()) return;
+	// part 1
+	auto& vec = partialSlabs[chunkSize];
+	auto itSlab = std::upper_bound(
+		vec.begin(), vec.end(),
+		reinterpret_cast<uintptr_t>(chunk),
+		[](uintptr_t addr, Slab* s) { return addr < reinterpret_cast<uintptr_t>(s->start); }
+	);
 
-	for (Slab* slab : it->second)
+	if (itSlab != vec.begin())
 	{
-		// check chunk ownership
+		--itSlab;
+		Slab* slab = *itSlab;
+		if (chunk >= slab->start && chunk < slab->end)
+		{
+			slab->DeallocateRaw(chunk);
+			return;
+		}
+	}
+
+
+	// part 2
+	auto it = fullSlabs.find(chunkSize);
+	if (it != fullSlabs.end())
+	{
+		auto& vec = it->second;   // reference to vector
+
 		uintptr_t c = reinterpret_cast<uintptr_t>(chunk);
+
+		// binary search
+		auto itSlab = std::upper_bound(
+			vec.begin(), vec.end(),
+			c,
+			[](uintptr_t addr, Slab* s) {
+				return addr < reinterpret_cast<uintptr_t>(s->start);
+			}
+		);
+
+		if (itSlab == vec.begin())
+
+			return; // no slab can contain this chunk
+
+		--itSlab;
+
+		Slab* slab = *itSlab;
 		uintptr_t sStart = reinterpret_cast<uintptr_t>(slab->start);
 		uintptr_t sEnd = reinterpret_cast<uintptr_t>(slab->end);
+
 		if (c >= sStart && c < sEnd)
 		{
 			slab->DeallocateRaw(chunk);
+
+			if (!slab->isFull)
+			{
+				// insert sorted
+				auto& pVec = partialSlabs[chunkSize];
+				auto pos = std::lower_bound(
+					pVec.begin(), pVec.end(),
+					slab,
+					[](Slab* a, Slab* b) { return a->start < b->start; }
+				);
+				pVec.insert(pos, slab);
+
+				// remove from fullSlabs
+				*itSlab = vec.back();
+				vec.pop_back();
+			}
 			return;
 		}
 	}
@@ -168,7 +266,7 @@ void MemoryManager::DeallocateRaw(void* chunk, size_t size)
 MemoryManager::~MemoryManager()
 {
 	// Iterate over all size classes in the map
-	for (auto& pair : slabsBySize)
+	for (auto& pair : partialSlabs)
 	{
 		auto& slabList = pair.second;
 		for (Slab* slab : slabList)
@@ -177,6 +275,20 @@ MemoryManager::~MemoryManager()
 			slab->~Slab();
 		}
 	}
+	for (auto& pair : fullSlabs)
+	{
+		auto& slabList = pair.second;
+		for (Slab* slab : slabList)
+		{
+			slab->~Slab();
+		}
+	}
+	for (auto& pair : currentSlabs)
+	{
+		auto& slab = pair.second;
+		slab->~Slab();
+	}
+
 	for (void* ptr : blocks)
 	{
 		free(ptr);

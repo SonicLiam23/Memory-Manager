@@ -4,11 +4,19 @@
 #include <vector>
 #include <unordered_map>
 #include "ManagerSettings.h"
+#define TIME_FUNC
 
 #ifdef _DEBUG
 #include <string>
 #include <sstream>
+
+#ifdef TIME_FUNC
+#include <chrono>
 #endif
+
+#endif
+
+
 
 // chunks will either be these sizes, or round up to the nearest 32
 constexpr size_t FixedChunkSizes[8] = { 1, 2, 4, 8, 16, 32, 64 };
@@ -17,7 +25,9 @@ class MemoryManager
 {
 private:
 	typedef char Byte;
-	std::unordered_map<size_t, std::vector<Slab*>> slabsBySize;
+	std::unordered_map<size_t, Slab*> currentSlabs;
+	std::unordered_map<size_t, std::vector<Slab*>> partialSlabs;
+	std::unordered_map<size_t, std::vector<Slab*>> fullSlabs;
 	std::vector<void*> blocks;
 
 	void* nextPtr = nullptr;
@@ -72,8 +82,8 @@ inline void MemoryManager::DestroyAndDeallocate(T* obj)
 	const size_t size = sizeof(T);
 	size_t chunkSize = RoundUpToChunkSize(size);
 
-	auto it = slabsBySize.find(chunkSize);
-	if (it == slabsBySize.end()) return;
+	auto it = currentSlabs.find(chunkSize);
+	if (it == currentSlabs.end()) return;
 
 	uintptr_t c = reinterpret_cast<uintptr_t>(obj);
 	for (Slab* slab : it->second)
@@ -113,7 +123,7 @@ static inline size_t RoundUpToChunkSize(size_t size)
 		return v + 1;
 	}
 	else {
-		// round up to nearest multiple of 32
-		return ((size + 31) / 32) * 32;
+		// round up to nearest multiple of 128
+		return ((size + 127) / 128) * 128;
 	}
 }
