@@ -5,10 +5,11 @@
 #include <chrono>
 #include <memory>
 using namespace std::chrono;
+#define TIME_FUNC
 
 class test : public ManagedMemory
 {
-	char c[1000000000];
+	char c[1000];
 };
 
 int main()
@@ -40,6 +41,8 @@ int main()
 	//LOGTEXTM((void*)char5);
 	//LOGTEXTM((void*)char6);
 	//LOGTEXTM("========");
+	MemoryManager::Get();
+
 	constexpr int loopAmount = 100000;
 	for (int i = 0; i < loopAmount; ++i)
 	{
@@ -49,7 +52,8 @@ int main()
 #ifdef TIME_FUNC
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 #endif
-		void* ptr = MemoryManager::Get()->AllocateRaw(size);
+		//void* ptr = MemoryManager::Get()->AllocateRaw(size);
+		test* t = new test();
 #ifdef  TIME_FUNC
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		float diff = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
@@ -59,7 +63,8 @@ int main()
 #endif //  TIME_FUNC
 
 
-		MemoryManager::Get()->DeallocateRaw(ptr, size);
+		//MemoryManager::Get()->DeallocateRaw(ptr, size);
+		MemoryManager::Get()->DeallocateRaw(t);
 
 
 	}
