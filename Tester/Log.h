@@ -2,17 +2,20 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+
 //#if defined _DEBUG
 
 
 #define LOGTEXT(x) Log::LogText(__FILE__, __LINE__, x)
 #define LOGTEXTM(x) Log::LogTextMinimal(x)
+#define LOGTEXTC(x) Log::LogTextConsole(x)
 
 
 //#else
 
 //#define LOGTEXT(x)
 //#define LOGTEXTM(x)
+//#define LOGTEXTC(x)
 
 //#endif
 
@@ -26,6 +29,8 @@ struct Log
 	template <typename T>
 	static void LogTextMinimal(T text);
 
+	template <typename T>
+	static void LogTextConsole(T text);
 	
 
 	static void EndLog()
@@ -34,12 +39,11 @@ struct Log
 	}
 
 private:
-	static std::stringstream logText;
 	static std::ofstream file;
 };
 
 template<typename T>
-static void Log::LogText(const char* file, int line, T text)
+inline void Log::LogText(const char* file, int line, T text)
 {
 	std::stringstream t;
 	try
@@ -52,7 +56,7 @@ static void Log::LogText(const char* file, int line, T text)
 }
 
 template <typename T>
-static void Log::LogTextMinimal(T text)
+inline void Log::LogTextMinimal(T text)
 {
 	try
 	{
@@ -64,4 +68,14 @@ static void Log::LogTextMinimal(T text)
 		file << text << "\n";
 	}
 	catch(...) {}
+}
+
+template<typename T>
+inline void Log::LogTextConsole(T text)
+{
+	try
+	{
+		std::cout << text << std::endl;
+	}
+	catch (...) {}
 }

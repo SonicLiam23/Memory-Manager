@@ -4,7 +4,10 @@
 #include <sstream>
 #include <string>
 #include <queue>
+#include <iostream>
 using namespace std::chrono;
+
+#define LOGTEXTM(x)
 
 void MemoryManagerTester::TestAll()
 {
@@ -48,9 +51,10 @@ void MemoryManagerTester::BulkAllocate()
 			size_t size = rand() % 1028 + 1;
 			void* ptr = MemoryManager::Get()->AllocateRaw(size);
 			if (rand() % 2 == 1) MemoryManager::Get()->DeallocateRaw(ptr);
+			
 		}
 		steady_clock::time_point end = steady_clock::now();
-
+		
 		float diff = duration_cast<milliseconds>(end - start).count();
 
 		std::stringstream ss;
@@ -125,14 +129,17 @@ void MemoryManagerTester::BulkAllocateNew()
 			char tmp = ptr->c[0];
 			if (rand() % 2 == 1) delete ptr;
 			else ptrs[i] = ptr;
+
+			
 		}
+		std::cout << MemoryManager::fragmentedBytes;
 		steady_clock::time_point end = steady_clock::now();
 		for (size64* ptr : ptrs)
 		{
-			if (ptr) delete ptr;
+			if (ptr) 
+				delete ptr;
 			ptr = nullptr;
 		}
-
 		float diff = duration_cast<milliseconds>(end - start).count();
 
 		std::stringstream ss;

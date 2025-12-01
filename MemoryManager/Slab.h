@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <cassert>
 #include <new>
-#define CORRECT_REUSE_CHECK
+// #define CORRECT_REUSE_CHECK
 
 struct Slab
 {
@@ -20,6 +20,7 @@ struct Slab
 
     struct ChunkNode
     {
+        size_t dataSize;
         ChunkNode* next;
         Slab* parentSlab;
     };

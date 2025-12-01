@@ -30,7 +30,7 @@ struct size8 : public ManagedMemory
 
 struct size64 : public ManagedMemory
 {
-	char c[64];
+	char c[65];
 };
 
 struct size128 : public ManagedMemory

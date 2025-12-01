@@ -38,6 +38,7 @@ private:
     static MemoryManager* s_instance;
 
 public:
+    static size_t fragmentedBytes;
     static MemoryManager* Get();
     void* AllocateRaw(size_t size);
     void DeallocateRaw(void* chunk);

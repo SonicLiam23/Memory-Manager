@@ -1,7 +1,9 @@
 ﻿#include "MemoryManager.h"
+#include "ManagedMemory.h"
 #include <cstdlib>
 #include <new>
 #include <cassert>
+size_t MemoryManager::fragmentedBytes = 0;
 
 MemoryManager* MemoryManager::s_instance = nullptr;
 
@@ -74,6 +76,8 @@ void* MemoryManager::AllocateRaw(size_t size)
     size_t classIdx = SizeToClass(size);
     Slab* slab = currentSlabs[classIdx];
 
+    
+
     // Pick a usable slab if current is null or full
     if (!slab || slab->isFull || !slab->freeListHead)
     {
@@ -89,6 +93,7 @@ void* MemoryManager::AllocateRaw(size_t size)
     }
 
     assert(slab != nullptr);
+    MemoryManager::fragmentedBytes += slab->ChunkSize - size  ;
 
     void* chunk = slab->Allocate();
     assert(PointerInBlocks(chunk) && "Chunk allocated outside any preallocated block!");
@@ -100,6 +105,11 @@ void* MemoryManager::AllocateRaw(size_t size)
         currentSlabs[classIdx] = nullptr;
     }
 
+    // add data to the node
+    Slab::ChunkNode* node = (Slab::ChunkNode*)chunk;
+    node = node - 1; // get the actual node, chunk is the start of the data
+    node->dataSize = size;
+    
     return chunk;
 }
 
@@ -120,6 +130,7 @@ void MemoryManager::DeallocateRaw(void* chunk)
 
     bool wasFull = slab->isFull;
     slab->DeallocateRaw(chunk);
+    MemoryManager::fragmentedBytes -= slab->ChunkSize - node->dataSize;
 
     size_t classIdx = SizeToClass(slab->ChunkSize);
 
@@ -221,6 +232,7 @@ MemoryManager::~MemoryManager()
 
 void MemoryManager::Reset()
 {
+    MemoryManager::fragmentedBytes = 0;
     if (!s_instance) return;
     delete s_instance;
     s_instance = nullptr;
